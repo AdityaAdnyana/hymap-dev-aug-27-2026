@@ -1,0 +1,82 @@
+@using Hymap.Application.Services
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<!-- Hamburger Menu Button -->
+<!-- left-[236px] keeps it inside the 288px (w-72) menu panel on the right side -->
+<div class="fixed top-[58px] transition-all duration-300 z-[100] @(isOpen ? "left-[236px]" : "left-6")">
+    <button @onclick="ToggleSidebar" class="bg-[#e4ecea] p-1 rounded shadow text-black border border-gray-300 flex-shrink-0">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+</div>
+
+<!-- Sidebar / Drawer -->
+@if (isOpen)
+{
+    <!-- Optional: Backdrop overlay to close menu by clicking outside -->
+    <div class="fixed inset-0 bg-black/10 z-[80]" @onclick="CloseSidebar"></div>
+
+    <div class="fixed inset-y-0 left-0 w-72 bg-[#e8ecea] shadow-2xl z-[90] flex flex-col pt-32 pl-4 pr-6 transition-transform">
+        <div class="flex flex-col gap-2">
+            <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Kelola Data Pelanggan</button>
+            <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Kelola Data Sopir</button>
+            <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Atur Jadwal Kiriman</button>
+            
+            <!-- Sub Menu Trigger -->
+            <div class="relative">
+                <button @onclick="ToggleSubMenu" class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">
+                    Info Penjualan
+                </button>
+                
+                @if (isSubMenuOpen)
+                {
+                    <!-- Popup Sub Menu -->
+                    <div class="absolute top-0 left-[105%] bg-[#e4ecea] border border-gray-300 rounded shadow-lg w-52 flex flex-col z-[100]">
+                        <div class="bg-[#325c6a] text-white text-xs px-3 py-1 flex justify-between items-center rounded-t font-bold">
+                            Info Penjualan
+                            <button @onclick="ToggleSubMenu" class="bg-white text-black text-[10px] w-4 h-4 flex items-center justify-center rounded border border-gray-400">X</button>
+                        </div>
+                        <div class="p-2 flex flex-col gap-2 bg-[#d7e3e0] rounded-b">
+                            <button class="w-full bg-[#aecfc4] text-[#718a85] font-bold py-2 px-2 rounded shadow text-sm">Laporan Penjualan</button>
+                            <button class="w-full bg-[#aecfc4] text-[#718a85] font-bold py-2 px-2 rounded shadow text-sm">Update Status<br/>Pesanan</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Kelola Stok Galon</button>
+            <button @onclick='() => NavigateTo("/kelolarute")' class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Data Rute</button>
+            <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Pantau Sopir</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isOpen = false;
+    private bool isSubMenuOpen = false;
+
+    private void ToggleSidebar()
+    {
+        isOpen = !isOpen;
+        if (!isOpen) isSubMenuOpen = false;
+    }
+
+    private void CloseSidebar()
+    {
+        isOpen = false;
+        isSubMenuOpen = false;
+    }
+
+    private void ToggleSubMenu()
+    {
+        isSubMenuOpen = !isSubMenuOpen;
+    }
+
+    private void NavigateTo(string url)
+    {
+        CloseSidebar();
+        Nav.NavigateTo(url);
+    }
+}

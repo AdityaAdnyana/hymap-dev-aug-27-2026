@@ -1,35 +1,27 @@
-using HYMAP_DEV_AUG_27_2026.Components;
-using Microsoft.EntityFrameworkCore;
+using System;
+using Microsoft.Data.Sqlite;
 
-var builder = WebApplication.CreateBuilder(args);
+var connectionString = "Data Source=../hymap_local.db";
+using var connection = new SqliteConnection(connectionString);
+connection.Open();
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+try {
+    using var cmd1 = connection.CreateCommand();
+    cmd1.CommandText = "ALTER TABLE Rutes RENAME TO Rutes;";
+    cmd1.ExecuteNonQuery();
+    Console.WriteLine("Renamed Rutes to Rutes.");
+} catch(Exception ex) { Console.WriteLine(ex.Message); }
 
-// Tambahan untuk SQLite dan Repositories
-builder.Services.AddDbContext<Hymap.Infrastructure.Data.AppDbContext>(options =>
-    options.UseSqlite("Data Source=hymap_local.db"));
+try {
+    using var cmd2 = connection.CreateCommand();
+    cmd2.CommandText = "ALTER TABLE Wilayahs RENAME TO Wilayahs;";
+    cmd2.ExecuteNonQuery();
+    Console.WriteLine("Renamed Wilayahs to Wilayahs.");
+} catch(Exception ex) { Console.WriteLine(ex.Message); }
 
-builder.Services.AddScoped<Hymap.Application.Interfaces.IUserRepository, Hymap.Infrastructure.Repositories.UserRepository>();
-builder.Services.AddScoped<Hymap.Application.Services.AuthService>();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
-
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
+try {
+    using var cmd3 = connection.CreateCommand();
+    cmd3.CommandText = "ALTER TABLE Wilayahs RENAME COLUMN RuteId TO RuteId;";
+    cmd3.ExecuteNonQuery();
+    Console.WriteLine("Renamed RuteId to RuteId in Wilayahs.");
+} catch(Exception ex) { Console.WriteLine(ex.Message); }

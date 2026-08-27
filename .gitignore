@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+
+
+# Git ignore from us
+HYMAP DEV-AUG-27-2026/PROJECT_HANDOFF.md

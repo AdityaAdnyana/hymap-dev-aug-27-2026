@@ -13,11 +13,6 @@ namespace Hymap.Application.Services
             _userRepository = userRepository;
         }
 
-        public async Task InitializeAsync()
-        {
-            await _userRepository.InitializeFirstAdminAsync();
-        }
-
         public async Task<bool> AuthenticateAsync(string username, string password)
         {
             var user = await _userRepository.GetByUsernameAsync(username);

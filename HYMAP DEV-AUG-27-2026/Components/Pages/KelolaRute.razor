@@ -1,0 +1,450 @@
+@page "/kelolarute"
+@using Hymap.Application.Services
+@using Hymap.Application.DTOs
+@using Hymap.Domain.Entities
+@inject RuteService RuteSvc
+@inject AuditLogService AuditSvc
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<PageTitle>Data Rute - HYMAP</PageTitle>
+
+<div class="min-h-screen bg-[#e1eee9] flex flex-col relative font-sans">
+    <!-- Top Double Lines (Equal Size) -->
+    <div class="absolute top-0 left-0 w-full flex flex-col z-[110]">
+        <div class="w-full h-6 bg-[#325c6a]"></div>
+        <div class="w-full h-6 bg-[#274a56]"></div>
+    </div>
+
+    <!-- Top Area with Controls -->
+    <!-- pt-[48px] pushes content exactly below the h-12 (48px) top line so there is no gap -->
+    <div class="w-full relative z-10 flex pt-[48px] items-start justify-between pr-8">
+        
+        <!-- Left Side: Title and Filter -->
+        <div class="flex items-center gap-6">
+            <!-- Header Tab Overlay -->
+            <!-- w-[420px] makes the dark green box wider so the curved border is not cut off by the text -->
+            <div class="bg-[#325d6b] text-white py-3.5 px-5 flex items-center gap-4 rounded-br-xl shadow-lg w-[420px] whitespace-nowrap z-20">
+                <h1 class="text-2xl font-bold tracking-wider ml-[52px]">Data Rute</h1>
+            </div>
+
+            <!-- Filter Dropdown -->
+            <div class="mt-2">
+                <!-- w-36 ensures TIDAK AKTIF is fully visible without being cut off -->
+                <select @bind="filterStatus" @bind:after="LoadData" class="bg-white border-none text-gray-700 py-1.5 px-4 rounded shadow-sm outline-none font-bold text-[11px] w-36">
+                    <option value="Aktif">AKTIF</option>
+                    <option value="Tidak Aktif">TIDAK AKTIF</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Right Side: Search and Riwayat -->
+        <div class="flex flex-col items-end gap-1.5 pt-4">
+            <input type="text" @bind="searchQuery" @bind:event="oninput" @onkeyup="HandleSearch" placeholder="Cari" class="bg-white border-none text-gray-700 py-1.5 px-4 rounded-full text-[13px] shadow-sm outline-none w-64" />
+            <button @onclick="OpenAuditModal" class="text-[11px] font-bold text-[#475593] hover:underline flex items-center gap-1 opacity-90 mr-2">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Riwayat Perubahan
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="px-8 flex-grow relative z-10 flex flex-col">
+        <div class="w-full flex-grow pb-10">
+            <!-- Table Header -->
+            <div class="bg-[#f0f7f5] p-3 mb-2 shadow-sm rounded-sm flex gap-4 items-center">
+                <div class="w-24 md:w-32 bg-[#bed8df] text-[#1c3038] font-bold py-2 text-center rounded-sm">Id</div>
+                <div class="flex-grow bg-[#bed8df] text-[#1c3038] font-bold py-2 text-center rounded-sm">Rute & Wilayah</div>
+            </div>
+
+            <!-- Table Rows -->
+            @if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    string rowBg = item.IsRute ? "bg-[#a6cbda]" : "bg-[#c0dbe1]";
+                    string textWeight = item.IsRute ? "font-bold text-[#233a43]" : "text-[#4b656e]";
+
+                    <div class="flex @rowBg py-2 px-3 mb-2 shadow-sm rounded-sm items-center hover:opacity-90 transition">
+                        <div class="w-24 md:w-32 text-center pl-2 @textWeight">@item.Code</div>
+                        <div class="flex-grow flex justify-between items-center ml-4 pl-2 @textWeight">
+                            <span class="@(item.IsRute ? "" : "ml-4 text-sm")">@item.Name</span>
+                            <div class="flex gap-2">
+                                <button @onclick="() => OpenEditModal(item)" class="bg-[#f0f7f5] text-[#475593] text-xs font-bold py-1 px-4 rounded shadow hover:bg-white transition">
+                                    Edit
+                                </button>
+                                @if (filterStatus == "Tidak Aktif")
+                                {
+                                    <button @onclick="() => ConfirmDelete(item)" class="bg-[#e0a8a8] text-[#692929] text-xs font-bold py-1 px-4 rounded shadow hover:bg-[#d49494] transition">
+                                        Hapus
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="absolute bottom-[72px] right-8 z-20">
+        <button @onclick="OpenAddModal" class="bg-[#f2f7f5] text-[#475593] font-bold py-1.5 px-4 rounded shadow-sm hover:bg-white transition flex items-center gap-2 text-sm border border-gray-200">
+            Tambah <span class="text-lg leading-none font-black">+</span>
+        </button>
+    </div>
+
+    <!-- Bottom Double Lines (Equal Size) -->
+    <div class="absolute bottom-0 left-0 w-full flex flex-col z-[110]">
+        <div class="w-full h-6 bg-[#274a56]"></div>
+        <div class="w-full h-6 bg-[#325c6a]"></div>
+    </div>
+</div>
+
+<!-- Modal Tambah -->
+@if (showAddModal)
+{
+    <div class="fixed inset-0 bg-black/20 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-[#e2efec] w-[600px] shadow-xl border border-gray-300 relative">
+            <div class="bg-[#326171] text-white px-4 py-3 flex justify-between items-center">
+                <h2 class="font-bold tracking-wide">Tambah Data Rute & Wilayah</h2>
+                <button @onclick="CloseModals" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <!-- Tabs -->
+                <div class="flex justify-center mb-6 gap-2">
+                    <button @onclick='() => addTab = "Rute"' class="w-auto px-4 py-1 text-sm font-bold rounded @(addTab == "Rute" ? "bg-[#d8e6e5] text-[#475593] shadow-inner" : "bg-[#c6d7d5] text-[#6a807d]")">Rute</button>
+                    <button @onclick='() => addTab = "Wilayah"' class="w-auto px-4 py-1 text-sm font-bold rounded @(addTab == "Wilayah" ? "bg-[#d8e6e5] text-[#475593] shadow-inner" : "bg-[#c6d7d5] text-[#6a807d]")">Wilayah</button>
+                </div>
+
+                <!-- Form Fields -->
+                <div class="flex flex-col gap-4">
+                    @if (addTab == "Wilayah")
+                    {
+                        <div class="flex items-center">
+                            <label class="w-1/3 text-[#475593] font-bold text-sm">Wilayah: *</label>
+                            <input type="text" @bind="formName" placeholder="Masukkan nama wilayah" class="w-2/3 bg-transparent border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-[#475593]" />
+                        </div>
+                        <div class="flex items-center">
+                            <label class="w-1/3 text-[#475593] font-bold text-sm">Rute: *</label>
+                            <select @bind="formRuteId" class="w-2/3 bg-transparent border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-[#475593]">
+                                <option value="0" disabled>Pilih Rute</option>
+                                @foreach (var d in dropdownRutes)
+                                {
+                                    <option value="@d.Id">@d.Name</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex items-center">
+                            <label class="w-1/3 text-[#475593] font-bold text-sm">Rute: *</label>
+                            <input type="text" @bind="formName" placeholder="Masukkan nama Rute" class="w-2/3 bg-transparent border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-[#475593]" />
+                        </div>
+                    }
+                </div>
+
+                <div class="flex justify-end mt-8">
+                    <button @onclick="SaveAdd" class="bg-[#f2f7f5] text-[#475593] font-bold py-1.5 px-6 rounded shadow hover:bg-white transition text-sm">
+                        Tambah
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Edit -->
+@if (showEditModal && editingItem != null)
+{
+    <div class="fixed inset-0 bg-black/20 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-[#e2efec] w-[600px] shadow-xl border border-gray-300 relative">
+            <div class="bg-[#326171] text-white px-4 py-3 flex justify-between items-center">
+                <h2 class="font-bold tracking-wide">Edit Data @(editingItem.IsRute ? "Rute" : "Wilayah")</h2>
+                <button @onclick="CloseModals" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="flex flex-col gap-4 mt-2">
+                    @if (!editingItem.IsRute)
+                    {
+                        <div class="flex items-center">
+                            <label class="w-1/3 text-[#475593] font-bold text-sm">Wilayah: *</label>
+                            <input type="text" @bind="formName" class="w-2/3 bg-transparent border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-[#475593]" />
+                        </div>
+                        <div class="flex items-center">
+                            <label class="w-1/3 text-[#475593] font-bold text-sm">Rute: *</label>
+                            <select @bind="formRuteId" class="w-2/3 bg-transparent border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-[#475593]">
+                                @foreach (var d in dropdownRutes)
+                                {
+                                    <option value="@d.Id">@d.Name</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex items-center">
+                            <label class="w-1/3 text-[#475593] font-bold text-sm">Rute: *</label>
+                            <input type="text" @bind="formName" class="w-2/3 bg-transparent border border-gray-300 rounded px-3 py-1 text-sm outline-none focus:border-[#475593]" />
+                        </div>
+                    }
+
+                    <div class="flex items-center mt-2">
+                        <label class="w-1/4 text-[#475593] font-bold text-sm">Status</label>
+                        <div class="w-3/4 flex bg-transparent border border-gray-300 rounded overflow-hidden">
+                            <button @onclick="() => formIsActive = true" class="w-1/2 py-1 text-xs font-bold @(formIsActive ? "bg-[#c8d9d7] text-[#475593]" : "bg-transparent text-gray-500")">Aktif</button>
+                            <button @onclick="() => formIsActive = false" class="w-1/2 py-1 text-xs font-bold @(!formIsActive ? "bg-[#c8d9d7] text-[#475593]" : "bg-transparent text-gray-500")">Tidak Aktif</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-8">
+                    <button @onclick="SaveEdit" class="bg-[#f2f7f5] text-[#475593] font-bold py-1.5 px-6 rounded shadow hover:bg-white transition text-sm">
+                        Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Riwayat Perubahan -->
+@if (showAuditModal)
+{
+    <div class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-[#e2efec] w-[900px] max-h-[85vh] flex flex-col shadow-xl border border-gray-300 relative rounded-sm">
+            <div class="bg-[#326171] text-white px-4 py-3 flex justify-between items-center rounded-t-sm">
+                <h2 class="font-bold tracking-wide flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Riwayat Perubahan
+                </h2>
+                <button @onclick="() => showAuditModal = false" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto">
+                <table class="w-full text-sm text-left text-gray-700 bg-white rounded shadow-sm overflow-hidden">
+                    <thead class="text-xs text-[#1c3038] uppercase bg-[#bed8df]">
+                        <tr>
+                            <th class="px-4 py-3 border-b border-gray-300">Waktu</th>
+                            <th class="px-4 py-3 border-b border-gray-300">Aksi</th>
+                            <th class="px-4 py-3 border-b border-gray-300">Tabel</th>
+                            <th class="px-4 py-3 border-b border-gray-300 w-1/2">Detail Perubahan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var log in auditLogs)
+                        {
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap align-top">
+                                    <div class="font-bold text-gray-800">@log.Timestamp.ToString("dd MMM yyyy")</div>
+                                    <div class="text-xs text-gray-500">@log.Timestamp.ToString("HH:mm:ss")</div>
+                                    <div class="text-xs mt-1 text-[#475593]">oleh @log.Username</div>
+                                </td>
+                                <td class="px-4 py-3 font-bold align-top @(log.Action == "Added" ? "text-green-600" : log.Action == "Deleted" ? "text-red-600" : "text-blue-600")">
+                                    @(log.Action == "Added" ? "Tambah" : log.Action == "Deleted" ? "Hapus" : "Edit")
+                                </td>
+                                <td class="px-4 py-3 align-top font-mono text-xs">
+                                    @log.EntityName <br/>
+                                    <span class="text-gray-500">ID: @log.PrimaryKey</span>
+                                </td>
+                                <td class="px-4 py-3 align-top text-xs font-mono break-all">
+                                    @if(!string.IsNullOrEmpty(log.OldValues) && log.OldValues != "null") { 
+                                        <div class="text-red-600 bg-red-50 p-1 rounded border border-red-100 mb-1">
+                                            <span class="font-bold">Lama:</span> @log.OldValues
+                                        </div> 
+                                    }
+                                    @if(!string.IsNullOrEmpty(log.NewValues) && log.NewValues != "null") { 
+                                        <div class="text-green-600 bg-green-50 p-1 rounded border border-green-100">
+                                            <span class="font-bold">Baru:</span> @log.NewValues
+                                        </div> 
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if(auditLogs == null || !auditLogs.Any())
+                        {
+                            <tr><td colspan="4" class="text-center py-6 text-gray-500 italic">Belum ada riwayat perubahan yang dicatat.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Konfirmasi Hapus -->
+@if (showDeleteModal)
+{
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-[#e4ecea] w-72 rounded-lg overflow-hidden shadow-2xl border border-gray-300">
+            <!-- Header -->
+            <div class="bg-[#294c59] text-center py-2.5 shadow-sm">
+                <span class="text-[#1c3842] font-black tracking-wider text-[15px]">Informasi Sistem</span>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 flex flex-col items-center">
+                <!-- Warning Icon -->
+                <svg class="w-20 h-20 text-yellow-400 drop-shadow-md mb-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path stroke="black" stroke-width="2" stroke-linejoin="round" d="M12 2L1 21h22L12 2z"></path>
+                    <path fill="black" d="M11 9h2v7h-2zm0 8h2v2h-2z"></path>
+                </svg>
+                
+                <h3 class="text-[22px] font-bold text-[#628189] mb-6 tracking-wide">Yakin Hapus?</h3>
+                
+                <!-- Buttons -->
+                <div class="flex gap-4 w-full justify-center">
+                    <button @onclick="CancelDelete" class="w-24 py-1.5 bg-[#a3c3c0] text-[#628189] font-bold text-lg rounded-[14px] border-4 border-[#8eb4b0] shadow-sm hover:opacity-90 transition">
+                        Batal
+                    </button>
+                    <button @onclick="ExecuteDelete" class="w-24 py-1.5 bg-[#d34d4d] text-white font-bold text-lg rounded-[14px] border-4 border-[#ce8a80] shadow-sm hover:opacity-90 transition tracking-wide">
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<DataRuteItemDto> items = new();
+    private List<Rute> dropdownRutes = new();
+    
+    private string filterStatus = "Aktif";
+    private string searchQuery = "";
+
+    // Modal states
+    private bool showAddModal = false;
+    private bool showEditModal = false;
+    private bool showAuditModal = false;
+    private bool showDeleteModal = false;
+    private DataRuteItemDto? editingItem;
+    private DataRuteItemDto? itemToDelete;
+    private List<AuditLog> auditLogs = new();
+
+    // Form states
+    private string addTab = "Rute";
+    private string formName = "";
+    private int formRuteId = 0;
+    private bool formIsActive = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        bool isActive = filterStatus == "Aktif";
+        items = await RuteSvc.GetListAsync(isActive, searchQuery);
+        dropdownRutes = await RuteSvc.GetActiveRutesForDropdownAsync();
+    }
+
+    private async Task HandleSearch(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || searchQuery.Length > 2 || searchQuery.Length == 0)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenAuditModal()
+    {
+        auditLogs = await AuditSvc.GetRecentLogsAsync();
+        showAuditModal = true;
+    }
+
+    private void OpenAddModal()
+    {
+        addTab = "Rute";
+        formName = "";
+        formRuteId = dropdownRutes.FirstOrDefault()?.Id ?? 0;
+        showAddModal = true;
+    }
+
+    private void OpenEditModal(DataRuteItemDto item)
+    {
+        editingItem = item;
+        formName = item.Name;
+        formIsActive = item.IsActive;
+        formRuteId = item.ParentRuteId ?? (dropdownRutes.FirstOrDefault()?.Id ?? 0);
+        showEditModal = true;
+    }
+
+    private void CloseModals()
+    {
+        showAddModal = false;
+        showEditModal = false;
+        editingItem = null;
+    }
+
+    private async Task SaveAdd()
+    {
+        if (string.IsNullOrWhiteSpace(formName)) return;
+
+        if (addTab == "Rute")
+        {
+            await RuteSvc.AddRuteAsync(formName);
+        }
+        else
+        {
+            if (formRuteId == 0) return; // Must select a rute
+            await RuteSvc.AddWilayahAsync(formName, formRuteId);
+        }
+
+        CloseModals();
+        await LoadData();
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editingItem == null || string.IsNullOrWhiteSpace(formName)) return;
+
+        if (editingItem.IsRute)
+        {
+            await RuteSvc.UpdateRuteAsync(editingItem.Id, formName, formIsActive);
+        }
+        else
+        {
+            await RuteSvc.UpdateWilayahAsync(editingItem.Id, formName, formRuteId, formIsActive);
+        }
+
+        CloseModals();
+        await LoadData();
+    }
+
+    private void ConfirmDelete(DataRuteItemDto item)
+    {
+        if (filterStatus == "Tidak Aktif" && !item.IsActive)
+        {
+            itemToDelete = item;
+            showDeleteModal = true;
+        }
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (itemToDelete != null)
+        {
+            await RuteSvc.DeleteAsync(itemToDelete.Id, itemToDelete.IsRute);
+            itemToDelete = null;
+            showDeleteModal = false;
+            await LoadData();
+        }
+    }
+
+    private void CancelDelete()
+    {
+        itemToDelete = null;
+        showDeleteModal = false;
+    }
+}

@@ -1,4 +1,5 @@
 @page "/"
+@layout Layout.EmptyLayout
 @using Hymap.Application.Services
 @inject AuthService Auth
 @inject NavigationManager Nav
@@ -7,9 +8,15 @@
 <PageTitle>Login - HYMAP</PageTitle>
 
 <div class="min-h-screen bg-[#aecfc4] flex flex-col items-center justify-center relative font-sans">
-    <!-- Border Atas & Bawah -->
-    <div class="absolute top-0 w-full h-10 bg-[#325c6a] border-b-8 border-[#274a56]"></div>
-    <div class="absolute bottom-0 w-full h-10 bg-[#325c6a] border-t-8 border-[#274a56]"></div>
+    <!-- Border Atas & Bawah (Equal Size) -->
+    <div class="absolute top-0 left-0 w-full flex flex-col z-[110]">
+        <div class="w-full h-6 bg-[#325c6a]"></div>
+        <div class="w-full h-6 bg-[#274a56]"></div>
+    </div>
+    <div class="absolute bottom-0 left-0 w-full flex flex-col z-[110]">
+        <div class="w-full h-6 bg-[#274a56]"></div>
+        <div class="w-full h-6 bg-[#325c6a]"></div>
+    </div>
 
     <h1 class="text-5xl font-black text-[#475593] tracking-[0.4em] mb-10 drop-shadow-md">HYMAP</h1>
 
@@ -39,11 +46,6 @@
     private bool isLoading = false;
     private bool showError = false;
     private string errorMessage = "";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await Auth.InitializeAsync();
-    }
 
     private async Task HandleLogin()
     {

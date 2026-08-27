@@ -18,10 +18,5 @@ namespace Hymap.Infrastructure.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
         }
-
-        public async Task InitializeFirstAdminAsync()
-        {
-            await _context.Database.EnsureCreatedAsync(); 
-        }
     }
 }
