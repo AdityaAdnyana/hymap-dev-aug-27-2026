@@ -1,0 +1,79 @@
+@page "/dashboard"
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - HYMAP</PageTitle>
+
+<div class="min-h-screen bg-[#aecfc4] relative font-sans overflow-hidden flex flex-col">
+    <!-- Border Atas & Bawah -->
+    <div class="absolute top-0 w-full h-10 bg-[#325c6a] border-b-8 border-[#274a56] z-10"></div>
+    <div class="absolute bottom-0 w-full h-10 bg-[#325c6a] border-t-8 border-[#274a56] z-10"></div>
+
+    <!-- Tombol Hamburger Menu -->
+    <div class="absolute top-14 left-4 z-40">
+        <button @onclick="ToggleSidebar" class="bg-[#e4ecea] p-1 rounded shadow text-black border border-gray-300">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Konten Utama (Logo HYMAP di Tengah) -->
+    <div class="flex-grow flex items-center justify-center z-0">
+        <h1 class="text-7xl font-black text-[#475593] tracking-[0.4em] drop-shadow-md">HYMAP</h1>
+    </div>
+
+    <!-- Sidebar / Drawer -->
+    @if (isSidebarOpen)
+    {
+        <div class="absolute inset-y-0 left-0 w-72 bg-[#e8ecea] shadow-2xl z-30 flex flex-col pt-24 pl-4 pr-6">
+            <div class="flex flex-col gap-2">
+                
+                <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Kelola Data Pelanggan</button>
+                <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Kelola Data Sopir</button>
+                <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Atur Jadwal Kiriman</button>
+                
+                <!-- Sub Menu Trigger -->
+                <div class="relative">
+                    <button @onclick="ToggleSubMenu" class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">
+                        Info Penjualan
+                    </button>
+                    
+                    @if (isSubMenuOpen)
+                    {
+                        <!-- Popup Sub Menu -->
+                        <div class="absolute top-0 left-[105%] bg-[#e4ecea] border border-gray-300 rounded shadow-lg w-52 flex flex-col z-50">
+                            <div class="bg-[#325c6a] text-white text-xs px-3 py-1 flex justify-between items-center rounded-t font-bold">
+                                Info Penjualan
+                                <button @onclick="ToggleSubMenu" class="bg-white text-black text-[10px] w-4 h-4 flex items-center justify-center rounded border border-gray-400">X</button>
+                            </div>
+                            <div class="p-2 flex flex-col gap-2 bg-[#d7e3e0] rounded-b">
+                                <button class="w-full bg-[#aecfc4] text-[#718a85] font-bold py-2 px-2 rounded shadow text-sm">Laporan Penjualan</button>
+                                <button class="w-full bg-[#aecfc4] text-[#718a85] font-bold py-2 px-2 rounded shadow text-sm">Update Status<br/>Pesanan</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Kelola Stok Galon</button>
+                <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Data Daerah Kiriman</button>
+                <button class="w-full bg-[#abcbc1] text-[#718a85] font-bold py-2.5 px-4 rounded shadow-sm text-left text-sm hover:bg-[#9ebfb5]">Pantau Sopir</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isSidebarOpen = false;
+    private bool isSubMenuOpen = false;
+
+    private void ToggleSidebar()
+    {
+        isSidebarOpen = !isSidebarOpen;
+        if (!isSidebarOpen) isSubMenuOpen = false; // Tutup submenu jika sidebar ditutup
+    }
+
+    private void ToggleSubMenu()
+    {
+        isSubMenuOpen = !isSubMenuOpen;
+    }
+}

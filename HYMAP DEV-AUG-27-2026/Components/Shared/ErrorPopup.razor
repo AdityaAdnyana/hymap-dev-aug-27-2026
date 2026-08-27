@@ -1,0 +1,38 @@
+@if (IsVisible)
+{
+    <div class="fixed inset-0 bg-black/20 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-[#e4d6d3] w-80 rounded shadow-xl overflow-hidden flex flex-col items-center">
+            <div class="bg-[#6b2f2f] w-full text-center py-2 text-[#c39c9c] font-bold text-sm tracking-wide">
+                Informasi Sistem
+            </div>
+            
+            <div class="mt-5 mb-3">
+                <div class="w-14 h-14 bg-[#8b2323] rounded-full flex items-center justify-center text-white text-3xl font-black">
+                    !
+                </div>
+            </div>
+            
+            <p class="text-center text-[#8e6c6c] font-bold px-6 mb-6 text-sm">
+                @Message
+            </p>
+            
+            <div class="mb-5 w-full px-10">
+                <button @onclick="Close" class="w-full bg-[#cbaaa9] hover:bg-[#b89594] text-[#6b4545] font-bold py-2 rounded-full shadow border border-[#a88a89]">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Close()
+    {
+        IsVisible = false;
+        await OnClose.InvokeAsync();
+    }
+}

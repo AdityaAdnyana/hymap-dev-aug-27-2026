@@ -1,7 +1,73 @@
-﻿@page "/"
+@page "/"
+@using Hymap.Application.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Login - HYMAP</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="min-h-screen bg-[#aecfc4] flex flex-col items-center justify-center relative font-sans">
+    <!-- Border Atas & Bawah -->
+    <div class="absolute top-0 w-full h-10 bg-[#325c6a] border-b-8 border-[#274a56]"></div>
+    <div class="absolute bottom-0 w-full h-10 bg-[#325c6a] border-t-8 border-[#274a56]"></div>
 
-Welcome to your new app.
+    <h1 class="text-5xl font-black text-[#475593] tracking-[0.4em] mb-10 drop-shadow-md">HYMAP</h1>
+
+    <div class="bg-white/20 p-6 rounded shadow-lg border border-white/30 w-[450px]">
+        <div class="flex items-center mb-3 bg-white/40 rounded">
+            <span class="text-[#475593] font-bold w-32 px-3 py-2">Username:</span>
+            <input type="text" @bind="username" class="bg-transparent outline-none w-full text-gray-700 placeholder-gray-400 text-sm" placeholder="Masukkan Username Terdaftar" />
+        </div>
+        
+        <div class="flex items-center mb-6 bg-white/40 rounded">
+            <span class="text-[#475593] font-bold w-32 px-3 py-2">Password:</span>
+            <input type="password" @bind="password" class="bg-transparent outline-none w-full text-gray-700 placeholder-gray-400 text-sm" placeholder="Masukkan Password" />
+        </div>
+        
+        <button @onclick="HandleLogin" class="w-full bg-[#f2f7f5] text-[#475593] font-bold py-2 rounded shadow hover:bg-white transition tracking-wide">
+            Log In
+        </button>
+    </div>
+</div>
+
+@if (isLoading) { <LoadingOverlay /> }
+<ErrorPopup IsVisible="showError" Message="@errorMessage" OnClose="() => showError = false" />
+
+@code {
+    private string username = "";
+    private string password = "";
+    private bool isLoading = false;
+    private bool showError = false;
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+    }
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Username dan Password wajib diisi!";
+            showError = true;
+            return;
+        }
+
+        isLoading = true;
+        await Task.Delay(1500); // Simulasi delay loading UI
+        
+        bool success = await Auth.AuthenticateAsync(username, password);
+        isLoading = false;
+
+        if (success)
+        {
+            Nav.NavigateTo("/dashboard");
+        }
+        else
+        {
+            errorMessage = "Username atau password salah!";
+            showError = true;
+        }
+    }
+}
